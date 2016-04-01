@@ -1,28 +1,33 @@
 package main
 
 import (
-//"net/http"
+	"net/http"
 )
 
-type params struct {
-	vars map[string]string
+type param struct {
+	vars []string
 }
 
-type Router struct {
+type Context struct {
+	params   []*param
+	paramMap map[string]*param
+	Vars     map[string]string
+}
+
+type Mux struct {
 	roots map[string]*section
 }
 
-//type Handle func(w http.ResponseWriter, r *http.Request, pr *params)
-type Handle func(s string)
+type Handle func(w http.ResponseWriter, r *http.Request, ctx *Context)
 
-func New() *Router {
-	r := &Router{
+func New() *Mux {
+	r := &Mux{
 		roots: make(map[string]*section),
 	}
 	return r
 }
 
-func (r *Router) Handle(method, path string, h Handle) error {
+func (r *Mux) Handle(method, path string, h Handle) error {
 	rs, ok := r.roots[method]
 	if !ok {
 		rs, _ = newSection(nil, "/")
@@ -30,4 +35,11 @@ func (r *Router) Handle(method, path string, h Handle) error {
 	}
 
 	return rs.addRoute(path, h)
+}
+
+func (r *Mux) match(method, path string, ctx *Context) (Handle, error) {
+	return nil, nil
+}
+
+func (r *Mux) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }

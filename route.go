@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 )
@@ -65,19 +66,20 @@ func newSection(sParent *section, name string) (*section, string) {
 				return nil, "regexp format error"
 			} else {
 				s.sName = name[2:i]
+				s.regexp = name[i+1:]
 			}
+		} else {
+			s.regexp = name[1:]
 		}
 	default:
 		s.sType = SectionTypeRaw
 		s.sName = name
 	}
 
-	/*
-		if sParent != nil {
-			fmt.Printf("pname=%s ptype=%s", sParent.sName, sParent.sType)
-		}
-		fmt.Printf(" name=%s sName=%s sType=%s\n", name, s.sName, s.sType)
-	*/
+	if sParent != nil {
+		fmt.Printf("pname=%s ptype=%s", sParent.sName, sParent.sType)
+	}
+	fmt.Printf(" name=%s sName=%s sType=%s regexp=%s\n", name, s.sName, s.sType, s.regexp)
 
 	if sParent != nil {
 		if sParent.sType == SectionTypeWildCard {
@@ -94,12 +96,12 @@ func newSection(sParent *section, name string) (*section, string) {
 	return s, ""
 }
 
-func (r *section) addRoute(path string, h Handle) error {
+func (rs *section) addRoute(path string, h Handle) error {
 	if h == nil {
 		return fmt.Errorf("handle not defined for path '%s'", path)
 	}
 
-	s := r
+	s := rs
 	ps := strings.Split(path, "/")
 	for _, p := range ps {
 		if len(p) == 0 {
@@ -127,15 +129,19 @@ func (r *section) addRoute(path string, h Handle) error {
 	}
 	s.h = h
 
-	if s != r {
+	if s != rs {
 		s.ts = strings.HasSuffix(path, "/")
 	}
 
 	return nil
 }
 
-func testHandle(s string) {
-	fmt.Println("testHandle: ", s)
+func (rs *section) match(method, path string, ctx *Context) (Handle, error) {
+	return nil, nil
+}
+
+func testHandle(w http.ResponseWriter, r *http.Request, ctx *Context) {
+	fmt.Println("testHandle: ")
 }
 
 func main() {
