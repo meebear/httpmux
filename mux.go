@@ -37,9 +37,10 @@ func (r *Mux) Handle(method, path string, h Handle) error {
 	return rs.addRoute(path, h)
 }
 
-func (r *Mux) match(method, path string, ctx *Context) (Handle, error) {
+func (r *Mux) findRoute(method, path string, ctx *Context) (Handle, error) {
 	return nil, nil
 }
 
 func (r *Mux) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	//ctx := Context{}
 }
