@@ -1,4 +1,4 @@
-package main
+package httpmux
 
 import (
 	"net/http"
@@ -27,18 +27,17 @@ func New() *Mux {
 	return r
 }
 
-func (r *Mux) Handle(method, path string, h Handle) error {
+func (r *Mux) Handle(method, path string, h Handle) {
 	rs, ok := r.roots[method]
 	if !ok {
-		rs, _ = newSection(nil, "/")
-		r.roots[method] = rs
+		r.roots[method], _ = newSection(nil, "/")
 	}
 
-	return rs.addRoute(path, h)
+	rs.addRoute(path, h)
 }
 
-func (r *Mux) findRoute(method, path string, ctx *Context) (Handle, error) {
-	return nil, nil
+func (r *Mux) findRoute(method, path string, ctx *Context) Handle {
+	return nil
 }
 
 func (r *Mux) ServeHTTP(w http.ResponseWriter, req *http.Request) {

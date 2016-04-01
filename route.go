@@ -1,8 +1,6 @@
-package main
+package httpmux
 
 import (
-	"fmt"
-	"net/http"
 	"regexp"
 	"strings"
 )
@@ -107,9 +105,9 @@ func newSection(sParent *section, name string) (*section, string) {
 	return s, ""
 }
 
-func (rs *section) addRoute(path string, h Handle) error {
+func (rs *section) addRoute(path string, h Handle) {
 	if h == nil {
-		return fmt.Errorf("handle not defined for path '%s'", path)
+		panic("handle not defined for path " + path)
 	}
 
 	s := rs
@@ -127,7 +125,7 @@ func (rs *section) addRoute(path string, h Handle) error {
 		if !ok {
 			errmsg := ""
 			if ss, errmsg = newSection(s, p); errmsg != "" {
-				return fmt.Errorf("error: addRoute: %s, %s", path, errmsg)
+				panic("error: addRoute: " + path + " " + errmsg)
 			}
 			s.subs[p] = ss
 
@@ -136,15 +134,13 @@ func (rs *section) addRoute(path string, h Handle) error {
 	}
 
 	if s.h != nil {
-		return fmt.Errorf("handle for '" + path + "' redefined")
+		panic("handle for '" + path + "' redefined")
 	}
 	s.h = h
 
 	if s != rs {
 		s.ts = strings.HasSuffix(path, "/")
 	}
-
-	return nil
 }
 
 func (s *section) match(ps []string, ctx *Context) (m bool, h Handle, stop bool) {
@@ -200,27 +196,4 @@ loop:
 		}
 	}
 	return h
-}
-
-func testHandle(w http.ResponseWriter, r *http.Request, ctx *Context) {
-	fmt.Println("testHandle: ")
-}
-
-func main() {
-	fmt.Println("add root")
-	rs, _ := newSection(nil, "/")
-	path := "/1/:dev/*$"
-	fmt.Println("add ", path)
-	err := rs.addRoute(path, testHandle)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	ctx := Context{}
-
-	path = "/1/fgt/any/data"
-	fmt.Println("find ", path)
-	h := rs.findRoute(path, &ctx)
-	fmt.Printf("h: %v\n", h)
 }
