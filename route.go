@@ -146,14 +146,14 @@ func (rs *section) addRoute(path string, h Handle) {
 func (s *section) match(ps []string, ctx *Context) (m bool, h Handle, stop bool) {
 	switch s.sType {
 	case SectionTypeWildCard:
-		//fmt.Printf("wildcard: %s=%s\n", s.sName, strings.Join(ps, "/"))
+		ctx.setParam(s.sName, strings.Join(ps, "/"))
 		m, h, stop = true, s.h, true
 	case SectionTypeMatch:
-		//fmt.Printf("match: %s=%s\n", s.sName, ps[0])
+		ctx.setParam(s.sName, ps[0])
 		m, h = true, s.h
 	case SectionTypeRegexp:
 		if s.regexp.Match([]byte(ps[0])) {
-			//fmt.Printf("regexp: %s=%s\n", s.sName, ps[0])
+			ctx.setParam(s.sName, ps[0])
 			m, h = true, s.h
 		}
 	case SectionTypeRaw:
@@ -176,7 +176,6 @@ loop:
 			return nil
 		}
 		if ss, ok := s.subs[p]; ok { // matches raw
-			//fmt.Printf("raw: %s\n", p)
 			h = ss.h
 			s = ss
 			continue

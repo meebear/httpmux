@@ -4,42 +4,100 @@ import (
 	"net/http"
 )
 
-type param struct {
-	vars []string
-}
-
-type Context struct {
-	params   []*param
-	paramMap map[string]*param
-	Vars     map[string]string
-}
-
 type Mux struct {
 	roots map[string]*section
+
+	NotFound http.Handler
+
+	PanicHandler func(http.ResponseWriter, *http.Request, interface{})
 }
 
-type Handle func(w http.ResponseWriter, r *http.Request, ctx *Context)
+type Handle func(http.ResponseWriter, *http.Request, *Context)
 
 func New() *Mux {
-	r := &Mux{
+	m := &Mux{
 		roots: make(map[string]*section),
 	}
-	return r
+	return m
 }
 
-func (r *Mux) Handle(method, path string, h Handle) {
-	rs, ok := r.roots[method]
-	if !ok {
-		r.roots[method], _ = newSection(nil, "/")
-	}
+func (m *Mux) Get(path string, h Handle) {
+	m.Handle("GET", path, h)
+}
 
+func (m *Mux) Post(path string, h Handle) {
+	m.Handle("POST", path, h)
+}
+
+func (m *Mux) Head(path string, h Handle) {
+	m.Handle("HEAD", path, h)
+}
+
+func (m *Mux) Options(path string, h Handle) {
+	m.Handle("OPTIONS", path, h)
+}
+
+func (m *Mux) Put(path string, h Handle) {
+	m.Handle("PUT", path, h)
+}
+
+func (m *Mux) Patch(path string, h Handle) {
+	m.Handle("PATCH", path, h)
+}
+
+func (m *Mux) Delete(path string, h Handle) {
+	m.Handle("DELETE", path, h)
+}
+
+func (m *Mux) Handle(method, path string, h Handle) {
+	rs, _ := m.roots[method]
+	if rs == nil {
+		errmsg := ""
+		rs, errmsg = newSection(nil, "/")
+		if errmsg != "" {
+			panic(errmsg)
+		}
+		m.roots[method] = rs
+	}
 	rs.addRoute(path, h)
 }
 
-func (r *Mux) findRoute(method, path string, ctx *Context) Handle {
-	return nil
+func (m *Mux) ServeFiles(path string, root string) {
+	if len(path) < 10 || path[len(path)-10:] != "/*filepath" {
+		panic("path must end with /*filepath in path " + path)
+	}
+	fileServer := http.FileServer(http.Dir(root))
+	m.Get(path, func(w http.ResponseWriter, req *http.Request, ctx *Context) {
+		req.URL.Path = ctx.ParamByName("filepath")
+		fileServer.ServeHTTP(w, req)
+	})
 }
 
-func (r *Mux) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	//ctx := Context{}
+func (m *Mux) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	if m.PanicHandler != nil {
+		defer m.reCover(w, req)
+	}
+
+	path := req.URL.Path
+
+	if rs := m.roots[req.Method]; rs != nil {
+		ctx := Context{}
+		h := rs.findRoute(path, &ctx)
+		if h != nil {
+			h(w, req, &ctx)
+			return
+		}
+	}
+
+	if m.NotFound != nil {
+		m.NotFound.ServeHTTP(w, req)
+	} else {
+		http.NotFound(w, req)
+	}
+}
+
+func (m *Mux) reCover(w http.ResponseWriter, req *http.Request) {
+	if rc := recover(); rc != nil {
+		m.PanicHandler(w, req, rc)
+	}
 }
