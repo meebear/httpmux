@@ -109,6 +109,9 @@ func (rs *section) addRoute(path string, h Handle) {
 	if h == nil {
 		panic("handle not defined for path " + path)
 	}
+	if len(path) == 0 || path[0] != '/' {
+		panic("path must begin with '/'")
+	}
 
 	s := rs
 	ps := strings.Split(path, "/")
@@ -165,6 +168,7 @@ func (s *section) match(ps []string, ctx *Context) (m bool, h Handle, stop bool)
 
 func (rs *section) findRoute(path string, ctx *Context) Handle {
 	var h Handle
+	isRoot := true
 	s := rs
 	ps := strings.Split(path, "/")
 loop:
@@ -172,6 +176,7 @@ loop:
 		if len(p) == 0 {
 			continue
 		}
+		isRoot = false
 		if s.subs == nil {
 			return nil
 		}
@@ -193,6 +198,12 @@ loop:
 				}
 			}
 		}
+
+		return nil
+	}
+
+	if isRoot {
+		return s.h
 	}
 	return h
 }
