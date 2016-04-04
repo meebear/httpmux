@@ -14,22 +14,27 @@ func NewChain() *Chain {
 	return &Chain{}
 }
 
-func (c *Chain) appendMiddlewares(mws ...Handler) {
+func (c *Chain) AppendMiddlewares(mws ...Handler) *Chain {
 	c.mws = append(c.mws, mws...)
+	return c
 }
 
-func (c *Chain) Use(h Handler) {
+func (c *Chain) Use(h Handler) *Chain {
 	c.h = h
+	return c
 }
 
 func (c *Chain) Next(w http.ResponseWriter, req *http.Request, ctx *Context) {
 	var h Handler
 	if c.nextIdx < len(c.mws) {
 		h = c.mws[c.nextIdx]
-		c.nextIdx++
-	} else {
+	} else if c.nextIdx == len(c.mws) {
 		h = c.h
+	} else {
+		return
 	}
+
+	c.nextIdx++
 
 	if h != nil {
 		h.ServeHTTP(w, req, ctx)

@@ -5,7 +5,7 @@ type param struct {
 }
 
 type Context struct {
-	chain    Chain
+	Chain
 	params   []*param
 	paramMap map[string]*param
 	Vars     map[string]string

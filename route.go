@@ -136,11 +136,19 @@ func (rs *section) addRoute(path string, h Handler) {
 		s = ss
 	}
 
+	if s.chain.h != nil {
+		panic("handler for path " + path + " redefined")
+	}
+
 	if c, ok := h.(*Chain); ok {
-		s.chain.appendMiddlewares(c.mws...)
+		s.chain.AppendMiddlewares(c.mws...)
 		s.chain.h = c.h
 	} else {
 		s.chain.h = h
+	}
+
+	if s.chain.h == nil {
+		panic("handler for path " + path + " not defined")
 	}
 
 	if s != rs {
@@ -205,7 +213,11 @@ loop:
 	}
 
 	if isRoot {
-		return &s.chain
+		c = &s.chain
 	}
-	return c
+
+	if c.h != nil {
+		return c
+	}
+	return nil
 }

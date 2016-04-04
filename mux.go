@@ -73,18 +73,17 @@ func (m *Mux) Handle(method, path string, h Handler) {
 	rs.addRoute(path, h)
 }
 
-/*
 func (m *Mux) ServeFiles(path string, root string) {
 	if len(path) < 10 || path[len(path)-10:] != "/*filepath" {
 		panic("path must end with /*filepath in path " + path)
 	}
 	fileServer := http.FileServer(http.Dir(root))
-	m.Get(path, func(w http.ResponseWriter, req *http.Request, ctx *Context) {
+	h := func(w http.ResponseWriter, req *http.Request, ctx *Context) {
 		req.URL.Path = ctx.ParamByName("filepath")
 		fileServer.ServeHTTP(w, req)
-	})
+	}
+	m.Get(path, HandlerFunc(h))
 }
-*/
 
 func (m *Mux) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if m.PanicHandler != nil {
@@ -97,8 +96,8 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		ctx := Context{}
 		c := rs.findRoute(path, &ctx)
 		if c != nil {
-			ctx.chain = *c
-			c.ServeHTTP(w, req, &ctx)
+			ctx.Chain = *c
+			ctx.Chain.ServeHTTP(w, req, &ctx)
 			return
 		}
 	}
