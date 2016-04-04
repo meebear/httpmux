@@ -12,7 +12,7 @@ type section struct {
 	hasNonRawSub bool // only one non-raw sub section is allowed
 	subs         map[string]*section
 	ts           bool // trailing slash, useful if this is last section
-	h            Handler
+	chain        Chain
 }
 
 type flags uint32
@@ -136,28 +136,30 @@ func (rs *section) addRoute(path string, h Handler) {
 		s = ss
 	}
 
-	if s.h != nil {
-		panic("handle for '" + path + "' redefined")
+	if c, ok := h.(*Chain); ok {
+		s.chain.appendMiddlewares(c.mws...)
+		s.chain.h = c.h
+	} else {
+		s.chain.h = h
 	}
-	s.h = h
 
 	if s != rs {
 		s.ts = strings.HasSuffix(path, "/")
 	}
 }
 
-func (s *section) match(ps []string, ctx *Context) (m bool, h Handler, stop bool) {
+func (s *section) match(ps []string, ctx *Context) (m bool, c *Chain, stop bool) {
 	switch s.sType {
 	case SectionTypeWildCard:
 		ctx.setParam(s.sName, strings.Join(ps, "/"))
-		m, h, stop = true, s.h, true
+		m, c, stop = true, &s.chain, true
 	case SectionTypeMatch:
 		ctx.setParam(s.sName, ps[0])
-		m, h = true, s.h
+		m, c = true, &s.chain
 	case SectionTypeRegexp:
 		if s.regexp.Match([]byte(ps[0])) {
 			ctx.setParam(s.sName, ps[0])
-			m, h = true, s.h
+			m, c = true, &s.chain
 		}
 	case SectionTypeRaw:
 		fallthrough
@@ -166,8 +168,8 @@ func (s *section) match(ps []string, ctx *Context) (m bool, h Handler, stop bool
 	return
 }
 
-func (rs *section) findRoute(path string, ctx *Context) Handler {
-	var h Handler
+func (rs *section) findRoute(path string, ctx *Context) *Chain {
+	var c *Chain
 	isRoot := true
 	s := rs
 	ps := strings.Split(path, "/")
@@ -181,14 +183,14 @@ loop:
 			return nil
 		}
 		if ss, ok := s.subs[p]; ok { // matches raw
-			h = ss.h
+			c = &ss.chain
 			s = ss
 			continue
 		}
 
 		match, stop := false, false
 		for _, ss := range s.subs {
-			match, h, stop = ss.match(ps[i:], ctx)
+			match, c, stop = ss.match(ps[i:], ctx)
 			if match {
 				if stop {
 					break loop
@@ -203,7 +205,7 @@ loop:
 	}
 
 	if isRoot {
-		return s.h
+		return &s.chain
 	}
-	return h
+	return c
 }

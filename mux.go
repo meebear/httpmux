@@ -58,6 +58,9 @@ func (m *Mux) Delete(path string, h Handler) {
 }
 
 func (m *Mux) Handle(method, path string, h Handler) {
+	if m.roots == nil {
+		m.roots = make(map[string]*section)
+	}
 	rs, _ := m.roots[method]
 	if rs == nil {
 		errmsg := ""
@@ -92,9 +95,10 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	if rs := m.roots[req.Method]; rs != nil {
 		ctx := Context{}
-		h := rs.findRoute(path, &ctx)
-		if h != nil {
-			h.ServeHTTP(w, req, &ctx)
+		c := rs.findRoute(path, &ctx)
+		if c != nil {
+			ctx.chain = *c
+			c.ServeHTTP(w, req, &ctx)
 			return
 		}
 	}
