@@ -12,7 +12,7 @@ type section struct {
 	hasNonRawSub bool // only one non-raw sub section is allowed
 	subs         map[string]*section
 	ts           bool // trailing slash, useful if this is last section
-	h            Handle
+	h            Handler
 }
 
 type flags uint32
@@ -105,7 +105,7 @@ func newSection(sParent *section, name string) (*section, string) {
 	return s, ""
 }
 
-func (rs *section) addRoute(path string, h Handle) {
+func (rs *section) addRoute(path string, h Handler) {
 	if h == nil {
 		panic("handle not defined for path " + path)
 	}
@@ -146,7 +146,7 @@ func (rs *section) addRoute(path string, h Handle) {
 	}
 }
 
-func (s *section) match(ps []string, ctx *Context) (m bool, h Handle, stop bool) {
+func (s *section) match(ps []string, ctx *Context) (m bool, h Handler, stop bool) {
 	switch s.sType {
 	case SectionTypeWildCard:
 		ctx.setParam(s.sName, strings.Join(ps, "/"))
@@ -166,8 +166,8 @@ func (s *section) match(ps []string, ctx *Context) (m bool, h Handle, stop bool)
 	return
 }
 
-func (rs *section) findRoute(path string, ctx *Context) Handle {
-	var h Handle
+func (rs *section) findRoute(path string, ctx *Context) Handler {
+	var h Handler
 	isRoot := true
 	s := rs
 	ps := strings.Split(path, "/")

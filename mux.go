@@ -12,7 +12,15 @@ type Mux struct {
 	PanicHandler func(http.ResponseWriter, *http.Request, interface{})
 }
 
-type Handle func(http.ResponseWriter, *http.Request, *Context)
+type Handler interface {
+	ServeHTTP(http.ResponseWriter, *http.Request, *Context)
+}
+
+type HandlerFunc func(w http.ResponseWriter, req *http.Request, ctx *Context)
+
+func (hf HandlerFunc) ServeHTTP(w http.ResponseWriter, req *http.Request, ctx *Context) {
+	hf(w, req, ctx)
+}
 
 func New() *Mux {
 	m := &Mux{
@@ -21,35 +29,35 @@ func New() *Mux {
 	return m
 }
 
-func (m *Mux) Get(path string, h Handle) {
+func (m *Mux) Get(path string, h Handler) {
 	m.Handle("GET", path, h)
 }
 
-func (m *Mux) Post(path string, h Handle) {
+func (m *Mux) Post(path string, h Handler) {
 	m.Handle("POST", path, h)
 }
 
-func (m *Mux) Head(path string, h Handle) {
+func (m *Mux) Head(path string, h Handler) {
 	m.Handle("HEAD", path, h)
 }
 
-func (m *Mux) Options(path string, h Handle) {
+func (m *Mux) Options(path string, h Handler) {
 	m.Handle("OPTIONS", path, h)
 }
 
-func (m *Mux) Put(path string, h Handle) {
+func (m *Mux) Put(path string, h Handler) {
 	m.Handle("PUT", path, h)
 }
 
-func (m *Mux) Patch(path string, h Handle) {
+func (m *Mux) Patch(path string, h Handler) {
 	m.Handle("PATCH", path, h)
 }
 
-func (m *Mux) Delete(path string, h Handle) {
+func (m *Mux) Delete(path string, h Handler) {
 	m.Handle("DELETE", path, h)
 }
 
-func (m *Mux) Handle(method, path string, h Handle) {
+func (m *Mux) Handle(method, path string, h Handler) {
 	rs, _ := m.roots[method]
 	if rs == nil {
 		errmsg := ""
@@ -62,6 +70,7 @@ func (m *Mux) Handle(method, path string, h Handle) {
 	rs.addRoute(path, h)
 }
 
+/*
 func (m *Mux) ServeFiles(path string, root string) {
 	if len(path) < 10 || path[len(path)-10:] != "/*filepath" {
 		panic("path must end with /*filepath in path " + path)
@@ -72,6 +81,7 @@ func (m *Mux) ServeFiles(path string, root string) {
 		fileServer.ServeHTTP(w, req)
 	})
 }
+*/
 
 func (m *Mux) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if m.PanicHandler != nil {
@@ -84,7 +94,7 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		ctx := Context{}
 		h := rs.findRoute(path, &ctx)
 		if h != nil {
-			h(w, req, &ctx)
+			h.ServeHTTP(w, req, &ctx)
 			return
 		}
 	}
