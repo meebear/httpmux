@@ -1,3 +1,4 @@
+// Copyright (c) 2016 Alan Kang. All rights reserved.
 package httpmux
 
 import (
@@ -23,10 +24,7 @@ func (hf HandlerFunc) ServeHTTP(w http.ResponseWriter, req *http.Request, ctx *C
 }
 
 func New() *Mux {
-	m := &Mux{
-		roots: make(map[string]*section),
-	}
-	return m
+	return &Mux{}
 }
 
 func (m *Mux) Get(path string, h Handler) {

@@ -1,3 +1,5 @@
+// Copyright (c) 2016 Alan Kang. All rights reserved.
+
 package httpmux
 
 import (
@@ -6,22 +8,20 @@ import (
 )
 
 type section struct {
-	sName        string // section name without leading char if not raw type
-	sType        sectionType
-	regexp       *regexp.Regexp
-	hasNonRawSub bool // only one non-raw sub section is allowed
+	// section name without leading char if not raw type
+	sName  string
+	sType  sectionType
+	regexp *regexp.Regexp
+	// only one non-raw sub section is allowed, raw and non-raw sub sections
+	// can co-exist, and raw type sub section take higher priority when
+	// matching
+	hasNonRawSub bool
 	subs         map[string]*section
 	ts           bool // trailing slash, useful if this is last section
 	chain        Chain
 }
 
-type flags uint32
-
 type sectionType int
-
-const (
-	RedirectTrailingSlash = 1 << iota
-)
 
 const (
 	SectionTypeRaw sectionType = iota

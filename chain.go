@@ -1,3 +1,6 @@
+// Copyright (c) 2016 Alan Kang. All rights reserved.
+// Chain of middlewares support for httpmux
+
 package httpmux
 
 import (
@@ -5,8 +8,8 @@ import (
 )
 
 type Chain struct {
-	mws     []Handler // middlewares
-	h       Handler
+	mws     []Handler // slice of middlewares
+	h       Handler   // final handler of request
 	nextIdx int
 }
 
@@ -26,7 +29,7 @@ func (c *Chain) Use(h Handler) *Chain {
 
 func (c *Chain) Next(w http.ResponseWriter, req *http.Request, ctx *Context) {
 	var h Handler
-	if c.nextIdx < len(c.mws) {
+	if c.nextIdx >= 0 && c.nextIdx < len(c.mws) {
 		h = c.mws[c.nextIdx]
 	} else if c.nextIdx == len(c.mws) {
 		h = c.h

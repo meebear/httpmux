@@ -1,3 +1,9 @@
+// Copyright (c) 2016 Alan Kang. All rights reserved.
+// Context stores URL parameters, params can be accessed by index
+// or name if named.
+// ctx.Vars can be used to store random data by handlers, won't be used
+// by httpmux
+
 package httpmux
 
 type param struct {
@@ -23,22 +29,33 @@ func (ctx *Context) setParam(name, value string) {
 	}
 }
 
-func (ctx *Context) ParamByIdx(idx int) string {
+func (ctx *Context) ParamsByIdx(idx int) []string {
 	if idx >= 0 && idx < len(ctx.params) {
 		p := ctx.params[idx]
-		if len(p.vars) > 0 {
-			return p.vars[0]
-		}
+		return p.vars
+	}
+	return nil
+}
+
+func (ctx *Context) ParamByIdx(idx int) string {
+	vars := ctx.ParamsByIdx(idx)
+	if len(vars) > 0 {
+		return vars[0]
 	}
 	return ""
 }
 
+func (ctx *Context) ParamsByName(name string) []string {
+	if p, ok := ctx.paramMap[name]; ok {
+		return p.vars
+	}
+	return nil
+}
+
 func (ctx *Context) ParamByName(name string) string {
-	p, ok := ctx.paramMap[name]
-	if ok {
-		if len(p.vars) > 0 {
-			return p.vars[0]
-		}
+	vars := ctx.ParamsByName(name)
+	if len(vars) > 0 {
+		return vars[0]
 	}
 	return ""
 }
