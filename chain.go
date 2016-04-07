@@ -17,6 +17,14 @@ func NewChain() *Chain {
 	return &Chain{}
 }
 
+func (c *Chain) PrependMiddlewares(mws ...Handler) *Chain {
+	var m []Handler
+	m = append(m, mws...)
+	m = append(m, c.mws...)
+	c.mws = m
+	return c
+}
+
 func (c *Chain) AppendMiddlewares(mws ...Handler) *Chain {
 	c.mws = append(c.mws, mws...)
 	return c
